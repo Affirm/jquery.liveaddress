@@ -113,7 +113,8 @@
 		config.stateFilter = typeof config.stateFilter === 'undefined' ? "" : config.stateFilter;
 		config.cityStatePreference = typeof config.cityStatePreference === 'undefined' ? "" : config.cityStatePreference;
 		config.geolocate = typeof config.geolocate === 'undefined' ? true : config.geolocate;
-		config.animationSpeed = config.animationSpeed || defaults.speed;
+		config.animationSpeed = typeof config.animationSpeed === 'undefined' ? defaults.speed : config.animationSpeed;
+		config.format = typeof config.format === 'function' ? config.format : function(s){return s.text};
 
 		config.candidates = config.candidates < 1 ? 0 : (config.candidates > 10 ? 10 : config.candidates);
 
@@ -899,7 +900,7 @@
 
 					for (var j = 0; j < json.suggestions.length; j++)
 					{
-						var link = $('<a href="javascript:" class="smarty-suggestion">' + json.suggestions[j].text + '</a>');
+						var link = $('<a href="javascript:" class="smarty-suggestion">' + config.format(json.suggestions[j]) + '</a>');
 						link.data("suggIndex", j);
 						data.suggContainer.append(link);
 					}
