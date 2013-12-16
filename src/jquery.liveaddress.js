@@ -28,7 +28,7 @@
 	var instance;			// Contains public-facing functions and variables
 	var ui = new UI;		// Internal use only, for UI-related tasks
 	var version = "2.4.9";	// Version of this copy of the script
-	
+
 	var defaults = {
 		candidates: 3,															// Number of suggestions to show if ambiguous
 		autocomplete: 10,														// Number of autocomplete suggestions; set to 0 or false to disable
@@ -49,7 +49,7 @@
 	/*
 	  *	ENTRY POINT
 	*/
-	
+
 	$.LiveAddress = function(arg)
 	{
 		return $(defaultSelector).LiveAddress(arg);
@@ -113,6 +113,7 @@
 		config.stateFilter = typeof config.stateFilter === 'undefined' ? "" : config.stateFilter;
 		config.cityStatePreference = typeof config.cityStatePreference === 'undefined' ? "" : config.cityStatePreference;
 		config.geolocate = typeof config.geolocate === 'undefined' ? true : config.geolocate;
+		config.animationSpeed = config.animationSpeed || defaults.speed;
 
 		config.candidates = config.candidates < 1 ? 0 : (config.candidates > 10 ? 10 : config.candidates);
 
@@ -227,7 +228,7 @@
 			version: version
 		};
 
-		
+
 		// Bind each handler to an event
 		for (var prop in EventHandlers)
 			bind(prop);
@@ -548,7 +549,7 @@
 					$('body').append('<div class="smarty-ui"><div title="Loading..." class="smarty-dots smarty-addr-'+id+'"></div></div>');
 					var offset = uiTagOffset(addresses[i].corners(true));
 					$('body').append('<div class="smarty-ui" style="top: '+offset.top+'px; left: '+offset.left+'px;"><a href="javascript:" class="smarty-tag smarty-tag-grayed smarty-addr-'+id+'" title="Address not verified. Click to verify." data-addressid="'+id+'"><span class="smarty-tag-check">&#10003;</span><span class="smarty-tag-text">Verify</span></a></div>');
-					
+
 					// Move the UI elements around when browser window is resized
 					$(window).resize({ addr: addresses[i] }, function(e)
 					{
@@ -631,7 +632,7 @@
 								autoUi.addClass('smarty-addr-' + addr.id());
 								containerUi.data("addrID", addr.id())
 								containerUi.append(autoUi);
-								
+
 								containerUi.css({
 									"position": "absolute",
 									"left": strField.offset().left + "px",
@@ -738,14 +739,14 @@
 					setTimeout(function() { $(window).resize(); }, 1500);
 				}
 			}
-			
+
 			if (config.submitVerify)
 			{
 				// Bind to form submits through form submit and submit button click events
 				for (var i = 0; i < forms.length; i++)
 				{
 					var f = forms[i];
-	
+
 					submitHandler = function(e)
 					{
 						// Don't invoke verification if it's already processing or autocomplete is open and the user was pressing Enter to use a suggestion
@@ -764,7 +765,7 @@
 							responsible for making sure that any changes to address field values raise the
 							"change" event on that element. Example: $('#city').val('New City').change();
 						*/
-	
+
 						if (!e.data.form.allActiveAddressesAccepted())
 						{
 							// We could verify all the addresses at once, but that can overwhelm the user.
@@ -775,29 +776,29 @@
 							return suppress(e);
 						}
 					};
-	
+
 					// Performs the tricky operation of uprooting existing event handlers that we have references to
 					// (either by jQuery's data cache or HTML attributes) planting ours, then laying theirs on top
 					var bindSubmitHandler = function(domElement, eventName)
 					{
 						if (!domElement || !eventName)
 							return;
-	
+
 						var oldHandlers = [], eventsRef = $._data(domElement, 'events');
-	
+
 						// If there are previously-bound-event-handlers (from jQuery), get those.
 						if (eventsRef && eventsRef[eventName] && eventsRef[eventName].length > 0)
 						{
 							// Get a reference to the old handlers previously bound by jQuery
 							oldHandlers = $.extend(true, [], eventsRef[eventName]);
 						}
-	
+
 						// Unbind them...
 						$(domElement).unbind(eventName);
-	
+
 						// ... then bind ours first ...
 						$(domElement)[eventName]({ form: f, invoke: domElement, invokeFn: eventName }, submitHandler);
-	
+
 						// ... then bind theirs last:
 						// First bind their onclick="..." or onsubmit="..." handles...
 						if (typeof domElement['on'+eventName] === 'function')
@@ -806,21 +807,21 @@
 							domElement['on'+eventName] = null;
 							$(domElement)[eventName](temp);
 						}
-	
+
 						// ... then finish up with their old jQuery handles.
 						for (var j = 0; j < oldHandlers.length; j++)
 							$(domElement)[eventName](oldHandlers[j].data, oldHandlers[j].handler);
 					};
-	
+
 					// Take any existing handlers (bound via jQuery) and re-bind them for AFTER our handler(s).
 					var formSubmitElements = $(config.submitSelector, f.dom);
-	
+
 					// Form submit() events are apparently invoked by CLICKING the submit button (even jQuery does this at its core for binding)
 					// (but jQuery, when raising a form submit event with .submit() will NOT necessarily click the submit button)
 					formSubmitElements.each(function(idx) {
 						bindSubmitHandler(this, 'click');	// These get fired first
 					});
-	
+
 					// These fire after button clicks, so these need to be bound AFTER binding to the submit button click events
 					bindSubmitHandler(f.dom, 'submit');
 				}
@@ -1025,7 +1026,7 @@
 			// this is for simplicity: and I figure, it won't happen too often.
 			// (Otherwise "Completed" events are raised by pressing Esc even if nothing is happening)
 			$(document).unbind('keyup');
-			$(uiPopup).slideUp(defaults.speed, function() { $(this).parent('.smarty-ui').remove(); });
+			$(uiPopup).slideUp(config.animationSpeed, function() { $(this).parent('.smarty-ui').remove(); });
 			trigger("Completed", e.data);
 		}
 
@@ -1255,7 +1256,7 @@
 
 			if (config.debug)
 				console.log("Automapping complete.");
-			
+
 			trigger("FieldsMapped");
 		};
 
@@ -1270,7 +1271,7 @@
 
 			if (config.debug)
 				console.log("Manually mapping fields given this data:", map);
-			
+
 			this.clean();
 			var formsFound = [];
 			map = map instanceof Array ? map : [map];
@@ -1325,7 +1326,7 @@
 				// Acquire the form based on the street address field (the required field)
 				var formDom = $(address.street).parents('form')[0];
 				var form = new Form(formDom);
-				
+
 				// Persist a reference to the form if it wasn't acquired before
 				if (!$(formDom).data(mapMeta.formDataProperty))
 				{
@@ -1419,7 +1420,7 @@
 		{
 			if (!config.ui || !addr)
 				return;
-			
+
 			var domTag = $('.smarty-tag.smarty-tag-grayed.smarty-addr-'+addr.id());
 			domTag.removeClass('smarty-tag-grayed').addClass('smarty-tag-green').attr("title", "Address verified! Click to undo.");
 			$('.smarty-tag-text', domTag).text('Verified').hover(function () {
@@ -1434,7 +1435,7 @@
 			var validSelector = '.smarty-tag.smarty-addr-'+addr.id();
 			if (!config.ui || !addr || $(validSelector).length == 0)
 				return;
-			
+
 			var domTag = $('.smarty-tag.smarty-tag-green.smarty-addr-'+addr.id());
 			domTag.removeClass('smarty-tag-green').addClass('smarty-tag-grayed').attr("title", "Address not verified. Click to verify.");
 			$('.smarty-tag-text', domTag).text('Verify').unbind('mouseenter mouseleave').removeClass('smarty-undo');
@@ -1468,7 +1469,7 @@
 			html += '<a href="javascript:" class="smarty-choice smarty-choice-abort smarty-abort">Click here to change your address</a>';
 			html += '<a href="javascript:" class="smarty-choice smarty-choice-override">Click here to certify the address is correct<br>('+addr.toString()+')</a>';
 			html += '</div></div></div>';
-			$(html).hide().appendTo('body').show(defaults.speed);
+			$(html).hide().appendTo('body').show(config.animationSpeed);
 
 			// Scroll to it if needed
 			if ($(document).scrollTop() > corners.top - 100
@@ -1488,7 +1489,7 @@
 			// User chose a candidate address
 			$('body').delegate(data.selectors.goodAddr, 'click', data, function(e)
 			{
-				$('.smarty-popup.smarty-addr-'+addr.id()).slideUp(defaults.speed, function()
+				$('.smarty-popup.smarty-addr-'+addr.id()).slideUp(config.animationSpeed, function()
 				{
 					$(this).parent('.smarty-ui').remove();
 					$(this).remove();
@@ -1509,7 +1510,7 @@
 			// User wants to revert to what they typed (forced accept)
 			$('body').delegate(data.selectors.useOriginal, 'click', data, function(e)
 			{
-				$(this).parents('.smarty-popup').slideUp(defaults.speed, function()
+				$(this).parents('.smarty-popup').slideUp(config.animationSpeed, function()
 				{
 					$(this).parent('.smarty-ui').remove();
 					$(this).remove();
@@ -1560,7 +1561,7 @@
 				+ '<div class="smarty-choice-alt"><a href="javascript:" class="smarty-choice smarty-choice-override">Click here to certify the address is correct<br>('+addr.toString()+')</a></div>'
 				+ '</div></div>';
 
-			$(html).hide().appendTo('body').show(defaults.speed);
+			$(html).hide().appendTo('body').show(config.animationSpeed);
 
 			data.selectors = {
 				useOriginal: '.smarty-popup.smarty-addr-'+addr.id()+' .smarty-choice-override ',
@@ -1631,11 +1632,11 @@
 		var state = "accepted"; 					// Can be: "accepted" or "changed"
 		// Example of a field:  street: { value: "123 main", dom: DOMElement, undo: "123 mai"}
 		// Some of the above fields will only be mapped manually, not automatically.
-		
+
 		// Private method that actually changes the address. The keepState parameter is
 		// used by the results of verification after an address is chosen; (or an "undo"
 		// on a freeform address), otherwise an infinite loop of requests is executed
-		// because the address keeps changing! (Set "suppressAutoVerify" to true when coming from the "Undo" link)	
+		// because the address keeps changing! (Set "suppressAutoVerify" to true when coming from the "Undo" link)
 		var doSet = function(key, value, updateDomElement, keepState, sourceEvent, suppressAutoVerify)
 		{
 			if (!arrayContains(acceptableFields, key))	// Skip "id" and other unacceptable fields
@@ -1651,7 +1652,7 @@
 
 			if (updateDomElement && fields[key].dom)
 				$(fields[key].dom).val(value);
-			
+
 			var eventMeta = {
 				sourceEvent: sourceEvent,	// may be undefined
 				field: key,
@@ -1659,7 +1660,7 @@
 				value: value,
 				suppressAutoVerification: suppressAutoVerify || false
 			};
-			
+
 			if (differentVal && !keepState)
 			{
 				ui.unmarkAsValid(self);
@@ -1741,7 +1742,7 @@
 						field: prop,
 						value: val
 					};
-					
+
 					// Bind the DOM element to needed events, passing in the data above
 					// NOTE: When the user types a street, city, and state, then hits Enter without leaving
 					// the state field, this change() event fires before the form is submitted, and if autoVerify is
@@ -1780,7 +1781,7 @@
 			// Given the response from an API request associated with this address,
 			// replace the values in the address... and if updateDomElement is true,
 			// then change the values in the fields on the page accordingly.
-			
+
 			if (typeof resp === 'array' && resp.length > 0)
 				resp = resp[0];
 
@@ -1943,7 +1944,7 @@
 					&& !fields.addressee && !fields.city && !fields.state
 					&& !fields.zipcode && !fields.urbanization && !fields.lastline;
 		}
-		
+
 		this.get = function(key)
 		{
 			return fields[key] ? fields[key].value : null
@@ -2072,7 +2073,7 @@
 					throw new Error("Candidate index is out of bounds (" + json.length + " candidates; indicies 0 through " + (json.length - 1) + " available; requested " + idx + ")");
 			}
 		};
-		
+
 		var maybeDefault = function(idx)
 		{
 			// Assigns index to 0, the default value, if no value is passed in
@@ -2196,7 +2197,7 @@
 			return this.raw[idx].metadata.rdi == "Residential";
 		}
 	}
-	
+
 
 	/*
 	 *	EVENT HANDLER "SHTUFF"
@@ -2261,7 +2262,7 @@
 		{
 			if (config.debug)
 				console.log("EVENT:", "AddressChanged", "(Address changed)", event, data);
-			
+
 			// If autoVerify is on, AND there's enough input in the address,
 			// AND it hasn't been verified automatically before -OR- it's a freeform address,
 			// AND autoVerification isn't suppressed (from an Undo click, even on a freeform address)
@@ -2284,7 +2285,7 @@
 		{
 			if (config.debug)
 				console.log("EVENT:", "VerificationInvoked", "(Address verification invoked)", event, data);
-			
+
 			// Abort now if an address in the same form is already being processed
 			if (!data.address || (data.address && data.address.form && data.address.form.processing))
 			{
@@ -2308,7 +2309,7 @@
 		{
 			if (config.debug)
 				console.log("EVENT:", "RequestSubmitted", "(Request submitted to server)", event, data);
-			
+
 			ui.showLoader(data.address);
 		},
 
@@ -2318,7 +2319,7 @@
 				console.log("EVENT:", "ResponseReceived", "(Response received from server, but has not been inspected)", event, data);
 
 			ui.hideLoader(data.address);
-			
+
 			if (typeof data.invoke === "function")
 				data.invoke(data.response);	// User-defined callback function; we're all done here.
 			else
@@ -2399,7 +2400,7 @@
 		{
 			if (config.debug)
 				console.log("EVENT:", "InvalidAddressRejected", "(User chose to correct an invalid address)", event, data);
-			
+
 			if (data.address.form)
 				delete data.address.form.processing;	// We're done with this address and ready for the next, potentially
 
@@ -2416,7 +2417,7 @@
 
 			if (data.address && data.address.form)
 				delete data.address.form.processing;	// We're done with this address and ready for the next, potentially
-			
+
 			// If this was the result of a form submit, re-submit the form (whether by clicking the button or raising form submit event)
 			if (data.invoke && data.invokeFn)
 				submitForm(data.invoke, data.invokeFn);
